@@ -24,6 +24,10 @@ add_library(${CMAKE_PROJECT_NAME} SHARED
 )
 
 
+set(CMAKE_SHARED_LINKER_FLAGS
+  "${CMAKE_SHARED_LINKER_FLAGS} -u ANativeActivity_onCreate"
+)
+
 
 target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
    gmorge/ggmorse/include
@@ -41,7 +45,6 @@ target_include_directories(${CMAKE_PROJECT_NAME} PRIVATE
 
 
 target_link_libraries(${CMAKE_PROJECT_NAME}
-        # List libraries link to the target library
         android
         ggmorse
         ImGuiELos

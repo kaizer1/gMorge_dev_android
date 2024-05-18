@@ -12,12 +12,13 @@
 #define EMSCRIPTEN_KEEPALIVE
 #endif
 
+
+#include <SDL.h>
+
 #include "imgui.h"
 #include "imgui_impl_android.h"
 #include "imgui_impl_opengl3.h"
-#include "SDL_surface.h"
-#include "SDL_video.h"
-#include "SDL.h"
+
 #include <android/log.h>
 #include <android_native_app_glue.h>
 #include <android/asset_manager.h>
@@ -29,9 +30,12 @@
 #include <vector>
 #include <functional>
 
-#include <android/log.h>
 
-#define  logRun(...) ((void)__android_log_print(ANDROID_LOG_INFO, "RunGame", __VA_ARGS__))
+#include "common.h"
+#include "ggmorse-common-sdl2.h"
+
+
+#include <logs.h>
 
 
 
@@ -86,6 +90,8 @@ static int32_t handleInputEvent(struct android_app* app, AInputEvent* inputEvent
 //    return env->NewStringUTF(hello.c_str());
 //}
 
+
+
 static char * icon_xpm[] = {
         "32 23 3 1",
         "     c #FFFFFF",
@@ -116,24 +122,151 @@ static char * icon_xpm[] = {
         "                                "};
 
 
-int  main(int args, char** argv){
+//int  main(int args, char** argv){
+//
+//
+//    logRun(" we are in main simple ! ");
+//
+//
+//      // if( SDL_Init( SDL_INIT_VIDEO ) != 0 )
+//    //{
+//        logRun(" we are init not... ");
+//   //     return 1;
+// //   }
+//logRun(" ???? aasdasd  ");
+//       //SDL_Surface* screen_surface = NULL;
+//
+//   // SDL_Window* window = NULL;
+//
+////    window = SDL_CreateWindow(
+////           "An SDL2 window",                  // window title
+////        SDL_WINDOWPOS_UNDEFINED,           // initial x position
+////        SDL_WINDOWPOS_UNDEFINED,           // initial y position
+////        640,                               // width, in pixels
+////        480,                               // height, in pixels
+////        SDL_WINDOW_OPENGL                  // flags - see below
+////    );
+//
+//   // if(window == NULL ){
+//        logRun(" windows is NULL sadf ");
+//
+//    //  }else {
+//        logRun(" WINDOWS is very ok ! ");
+//
+//    //  }
+//
+//
+//
+//       //SDL_Renderer* renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
+//
+//    //auto surface = IMG_ReadXPMFromArray(icon_xpm);
+//    //auto texture = SDL_CreateTextureFromSurface(renderer, surface);
+//
+//         logRun(" pre error 02 ");
+//
+//    //SDL_SetRenderDrawColor( renderer, 220, 220, 220, 255 );
+//
+//    // Clear winow
+//    //SDL_RenderClear( renderer );
+//
+//         logRun(" pre error 03 ");
+//
+//
+//       //      void * gl_context = SDL_GL_CreateContext(window);
+//
+//   // SDL_GL_MakeCurrent(window, gl_context);
+//   // SDL_GL_SetSwapInterval(1); // Enable vsync
+//
+//
+//
+//    IMGUI_CHECKVERSION();
+//    ImGui::CreateContext();
+//    ImGuiIO& io = ImGui::GetIO();
+//    logRun(" pre error 03.4  ");
+//
+//      ImGui::StyleColorsDark();
+//
+//      //ImGui_ImplAndroid_Init(window);
+//      ImGui_ImplOpenGL3_Init("#version 300 es");
+//
+//
+//
+//      //    ImGui::Style();
+//
+//   // SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
+//
+//    //
+//
+//    ImGui_ImplOpenGL3_NewFrame();
+//    ImGui_ImplAndroid_NewFrame();
+//    ImGui::NewFrame();
+//
+//    ImGui::Render();
+//
+//    bool isInitialized = false;
+//    std::thread worker;
+//
+//
+//
+//
+//    //ImGui_Init(window, gl_context);
+//    //ImGui::GetIO().IniFilename = nullptr;
+//
+//
+//    //SDL_Surface* solid = TTF_RenderText_Solid(font, "SDL2 Android Example", textColor);
+//
+//
+//    //SDL_Texture* solidTexture = SDL_CreateTextureFromSurface(renderer, solid);
+//    //SDL_RenderCopy(renderer, solidTexture, NULL, &dstrect);
+//    //SDL_FreeSurface(solid);
+//
+//    // SDL2_gfx example
+//    //thickLineColor(renderer, 0, 300, 300, 300, 20, 0xFF00FFFF) ;
+//
+//    // Render to the screen
+//   // SDL_RenderPresent(renderer);
+//
+//     logRun(" pre error 04 ");
+//
+//   // SDL_DestroyWindow(window);
+//
+//    // Clean up
+//   // SDL_Quit();
+//
+//
+//     return 0;
+//}
+
+//struct android_app *gandroidapp;
 
 
-    logRun(" we are in main simple ! ");
+void android_main(struct android_app* app){
 
 
-       if( SDL_Init( SDL_INIT_VIDEO ) != 0 )
-    {
-        logRun(" we are init not... ");
-        return 1;
-    }
-logRun(" ???? aasdasd  ");
-    SDL_Surface* screen_surface = NULL;
+}
 
-    SDL_Window* window = NULL;
 
+
+
+//void android_main(struct android_app* app)
+int main(int /*argc*/, char* /*argv*/[])
+{
+
+    //gandroidapp
+
+
+    logRun(" we are in call ");
+    logRun(" no init SDL ! ");
+
+
+
+      SDL_Window *window;                    // Declare a pointer
+
+    SDL_Init(SDL_INIT_VIDEO);              // Initialize SDL2
+
+    // Create an application window with the following settings:
     window = SDL_CreateWindow(
-           "An SDL2 window",                  // window title
+        "An SDL2 window",                  // window title
         SDL_WINDOWPOS_UNDEFINED,           // initial x position
         SDL_WINDOWPOS_UNDEFINED,           // initial y position
         640,                               // width, in pixels
@@ -141,256 +274,97 @@ logRun(" ???? aasdasd  ");
         SDL_WINDOW_OPENGL                  // flags - see below
     );
 
-    if(window == NULL ){
-        logRun(" windows is NULL sadf ");
-
-    }else {
-        logRun(" WINDOWS is very ok ! ");
-
+    // Check that the window was successfully created
+    if (window == NULL) {
+        // In the case that the window could not be made...
+        printf("Could not create window: %s\n", SDL_GetError());
+        return 1;
     }
 
+    // The window is open: could enter program loop here (see SDL_PollEvent())
+    // Setup renderer
+    SDL_Renderer* renderer = NULL;
+    renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
 
-
-       SDL_Renderer* renderer =  SDL_CreateRenderer( window, -1, SDL_RENDERER_ACCELERATED);
-
-    //auto surface = IMG_ReadXPMFromArray(icon_xpm);
-    //auto texture = SDL_CreateTextureFromSurface(renderer, surface);
-
-         logRun(" pre error 02 ");
-
-    SDL_SetRenderDrawColor( renderer, 220, 220, 220, 255 );
+    // Set render color to red ( background will be rendered in this color )
+    SDL_SetRenderDrawColor( renderer, 255, 0, 0, 255 );
 
     // Clear winow
     SDL_RenderClear( renderer );
 
-         logRun(" pre error 03 ");
+    // Creat a rect at pos ( 50, 50 ) that's 50 pixels wide and 50 pixels high.
+    SDL_Rect r;
+    r.x = 50;
+    r.y = 50;
+    r.w = 500;
+    r.h = 500;
 
-    //SDL_Surface* solid = TTF_RenderText_Solid(font, "SDL2 Android Example", textColor);
+    // Set render color to blue ( rect will be rendered in this color )
+    SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
 
+    // Render image
+  //  SDL_Surface *loadedImage = IMG_Load("res/hello.png");
+  //  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, loadedImage);
+   // SDL_FreeSurface(loadedImage);
 
-    //SDL_Texture* solidTexture = SDL_CreateTextureFromSurface(renderer, solid);
-    //SDL_RenderCopy(renderer, solidTexture, NULL, &dstrect);
-    //SDL_FreeSurface(solid);
+  //  SDL_RenderCopy(renderer, texture, NULL, &r);
 
-    // SDL2_gfx example
-    //thickLineColor(renderer, 0, 300, 300, 300, 20, 0xFF00FFFF) ;
-
-    // Render to the screen
+    // Render the rect to the screen
     SDL_RenderPresent(renderer);
 
-     logRun(" pre error 04 ");
 
+    if(GGMorse_init(-1,-1)){
+        logRun(" load GGMORSE is ok ");
+    }else{
+        logRun(" Not loaded ! ");
+    }
+
+    initMainAndRunCore();
+    logRun(" adfasldjkf !");
+//
+//
+//
+//       gandroidapp->onAppCmd = handleAppCmd;
+//       gandroidapp->onInputEvent = handleInputEvent;
+//
+//         while (true)
+//    {
+//        int out_events;
+//        struct android_poll_source* out_data;
+//
+//
+//        while (ALooper_pollAll(g_Initialized ? 0 : -1, nullptr, &out_events, (void**)&out_data) >= 0)
+//        {
+//
+//            if (out_data != nullptr)
+//                out_data->process(gandroidapp, out_data);
+//
+//
+//            if (gandroidapp->destroyRequested != 0)
+//            {
+//
+//                if (!g_Initialized)
+//                    Shutdown();
+//
+//                return 0;
+//            }
+//        }
+//
+//        MainLoopStep();
+//    }
+
+
+
+   SDL_Delay(20000);
+
+    // Close and destroy the window
     SDL_DestroyWindow(window);
 
     // Clean up
     SDL_Quit();
 
 
-     return 0;
-}
-
-void android_main(struct android_app* state)
-{
-
-
-    logRun(" we are in call ");
-
-
-
-       if( SDL_Init(SDL_INIT_EVERYTHING  ) != 0 )
-    {
-        logRun(" no init SDL ! ");
-        //return 1;
-    }
-
-    SDL_Surface* screen_surface = NULL;
-
-    SDL_Window* window = NULL;
-
-
-
-       state->onAppCmd = handleAppCmd;
-       state->onInputEvent = handleInputEvent;
-
-
-
-           while (true)
-    {
-        int out_events;
-        struct android_poll_source* out_data;
-
-        // Poll all events. If the app is not visible, this loop blocks until g_Initialized == true.
-        while (ALooper_pollAll(g_Initialized ? 0 : -1, nullptr, &out_events, (void**)&out_data) >= 0)
-        {
-            // Process one event
-            if (out_data != nullptr)
-                out_data->process(state, out_data);
-
-            // Exit the app by returning from within the infinite loop
-            if (state->destroyRequested != 0)
-            {
-                // shutdown() should have been called already while processing the
-                // app command APP_CMD_TERM_WINDOW. But we play save here
-                if (!g_Initialized)
-                    Shutdown();
-
-                return;
-            }
-        }
-
-        // Initiate a new frame
-        MainLoopStep();
-    }
-
-
-//    auto argm = parseCmdArguments(argc, argv);
-//    int captureId = argm["c"].empty() ? 0 : std::stoi(argm["c"]);
-//    int playbackId = argm["p"].empty() ? 0 : std::stoi(argm["p"]);
-//
-//    if (SDL_Init(SDL_INIT_VIDEO) != 0) {
-//        fprintf(stderr, "Error: %s\n", SDL_GetError());
-//        return -1;
-//    }
-//
-//    ImGui_PreInit();
-//
-//    int windowX = 400;
-//    int windowY = 600;
-//
-//    // GGMorse video settings
-//    //float scale = 0.65;
-//
-//    //int windowX = scale*570;
-//    //int windowY = scale*917;
-//
-//    const char * windowTitle = "GGMorse";
-//
-//#ifdef __EMSCRIPTEN__
-//    SDL_Renderer * renderer;
-//    SDL_Window * window;
-//    SDL_CreateWindowAndRenderer(windowX, windowY, SDL_WINDOW_OPENGL, &window, &renderer);
-//#else
-//    SDL_WindowFlags window_flags = (SDL_WindowFlags)(SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI);
-//    SDL_Window * window = SDL_CreateWindow(windowTitle, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, windowX, windowY, window_flags);
-//#endif
-//
-//    void * gl_context = SDL_GL_CreateContext(window);
-//
-//    SDL_GL_MakeCurrent(window, gl_context);
-//    SDL_GL_SetSwapInterval(1); // Enable vsync
-//
-//    ImGui_Init(window, gl_context);
-//    ImGui::GetIO().IniFilename = nullptr;
-//
-//    {
-//        bool isNotLoaded = true;
-//        const float fontSize = 14.0f;
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "DroidSans.ttf", kGlobalImGuiScale*fontSize, false);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../bin/DroidSans.ttf", kGlobalImGuiScale*fontSize, false);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../examples/assets/fonts/DroidSans.ttf", kGlobalImGuiScale*fontSize, false);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../../examples/assets/fonts/DroidSans.ttf", kGlobalImGuiScale*fontSize, false);
-//    }
-//
-//    {
-//        bool isNotLoaded = true;
-//        const float fontSize = 14.0f;
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "fontawesome-webfont.ttf", kGlobalImGuiScale*fontSize, true);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../bin/fontawesome-webfont.ttf", kGlobalImGuiScale*fontSize, true);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../examples/assets/fonts/fontawesome-webfont.ttf", kGlobalImGuiScale*fontSize, true);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../../examples/assets/fonts/fontawesome-webfont.ttf", kGlobalImGuiScale*fontSize, true);
-//    }
-//
-//    {
-//        bool isNotLoaded = true;
-//        const float fontSize = 9.0f;
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "ProggyTiny.ttf", kGlobalImGuiScale*fontSize, false);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../bin/ProggyTiny.ttf", kGlobalImGuiScale*fontSize, false);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../examples/assets/fonts/ProggyTiny.ttf", kGlobalImGuiScale*fontSize, false);
-//        isNotLoaded = isNotLoaded && !ImGui_tryLoadFont(getBinaryPath() + "../../examples/assets/fonts/ProggyTiny.ttf", kGlobalImGuiScale*fontSize, false);
-//    }
-//
-//    ImGui_SetStyle();
-//
-//    SDL_EventState(SDL_DROPFILE, SDL_ENABLE);
-//
-//    ImGui_NewFrame(window);
-//    ImGui::Render();
-//
-//    bool isInitialized = false;
-//    std::thread worker;
-//
-//    g_doInit = [&]() {
-//        if (GGMorse_init(playbackId, captureId) == false) {
-//            fprintf(stderr, "Failed to initialize GGMorse\n");
-//            return false;
-//        }
-//
-//#ifdef __EMSCRIPTEN__
-//        initMain();
-//#else
-//        worker = initMainAndRunCore();
-//#endif
-//
-//        isInitialized = true;
-//
-//        return true;
-//    };
-//
-//    g_setWindowSize = [&](int sizeX, int sizeY) {
-//        SDL_SetWindowSize(window, sizeX, sizeY);
-//    };
-//
-//    g_mainUpdate = [&]() {
-//        if (isInitialized == false) {
-//            return true;
-//        }
-//
-//        if (ImGui_BeginFrame(window) == false) {
-//            return false;
-//        }
-//
-//        renderMain();
-//        updateMain();
-//
-//        ImGui_EndFrame(window);
-//
-//#ifdef __EMSCRIPTEN__
-//        updateCore();
-//#endif
-//
-//        return true;
-//    };
-//
-//#ifdef __EMSCRIPTEN__
-//    emscripten_set_main_loop_arg(mainUpdate, NULL, 60, true);
-//#else
-//    if (g_doInit() == false) {
-//        printf("Error: failed to initialize audio\n");
-//        return -2;
-//    }
-//
-//    while (true) {
-//        if (g_mainUpdate() == false) break;
-//    }
-//
-//    deinitMain();
-//    worker.join();
-//
-//    GGMorse_deinit();
-//
-//    // Cleanup
-//    ImGui_Shutdown();
-//    ImGui::DestroyContext();
-//
-//    SDL_GL_DeleteContext(gl_context);
-//    SDL_DestroyWindow(window);
-//    SDL_CloseAudio();
-//    SDL_Quit();
-//#endif
-
-
-//return 0;
-
+         return 1;
 
 }
 
