@@ -244,7 +244,12 @@ void android_main(struct android_app* app){
 
 
 }
+static std::function<bool()> g_doInit;
+static std::function<bool()> g_mainUpdate;
 
+void mainUpdate(void *) {
+    g_mainUpdate();
+}
 
 
 
@@ -302,6 +307,7 @@ int main(int /*argc*/, char* /*argv*/[])
     // Set render color to blue ( rect will be rendered in this color )
     SDL_SetRenderDrawColor( renderer, 0, 0, 255, 255 );
 
+     SDL_GL_SetSwapInterval(1);
     // Render image
   //  SDL_Surface *loadedImage = IMG_Load("res/hello.png");
   //  SDL_Texture *texture = SDL_CreateTextureFromSurface(renderer, loadedImage);
@@ -313,17 +319,57 @@ int main(int /*argc*/, char* /*argv*/[])
     SDL_RenderPresent(renderer);
 
 
-    if(GGMorse_init(-1,-1)){
-        logRun(" load GGMORSE is ok ");
-    }else{
-        logRun(" Not loaded ! ");
-    }
 
-    initMainAndRunCore();
+  //  SDL_SetEnv(SDL_AUDIODRIVER, "AAudio");
+
+    bool isInitialized = false;
+    std::thread worker;
+
+    g_doInit = [&](){
+         if(!GGMorse_init(1, 1)){
+             logRun(" error init GGMorse ");
+             return false;
+         }
+
+        logRun(" pre big Error 01 ");
+        //  worker = initMainAndRunCore();
+        logRun(" post error is ");
+      //   isInitialized = true;
+    };
+
+
+
     logRun(" adfasldjkf !");
-//
-//
-//
+
+
+     if(g_doInit() == false ){
+         logRun(" my simple gg error ! ");
+     }else {
+         logRun(" ok all load  !");
+     }
+
+
+
+
+         g_mainUpdate = [&]() {
+        if (isInitialized == false) {
+            return true;
+        }
+
+
+
+        renderMain();
+        updateMain();
+
+        return true;
+    };
+
+
+        while (true) {
+        if (g_mainUpdate() == false) break;
+
+        }
+
 //       gandroidapp->onAppCmd = handleAppCmd;
 //       gandroidapp->onInputEvent = handleInputEvent;
 //
@@ -353,6 +399,10 @@ int main(int /*argc*/, char* /*argv*/[])
 //        MainLoopStep();
 //    }
 
+   deinitMain();
+    worker.join();
+
+    GGMorse_deinit();
 
 
    SDL_Delay(20000);

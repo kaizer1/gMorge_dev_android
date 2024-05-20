@@ -362,6 +362,7 @@ void initMain() {
 void updateCore() {
     static Input inputCurrent;
 
+      logRun2(" start UpdateCore !  ");
     static bool isFirstCall = true;
     static int rxDataLengthLast = 0;
     static GGMorse::TxRx rxDataLast;
@@ -452,165 +453,165 @@ void updateCore() {
     }
 }
 
-//void renderMain() {
-//    auto tFrameStart = std::chrono::high_resolution_clock::now();
-//
-//    static State stateCurrent;
-//
-//    {
-//        std::lock_guard<std::mutex> lock(g_buffer.mutex);
-//        g_buffer.stateUI.apply(stateCurrent);
+void renderMain() {
+    auto tFrameStart = std::chrono::high_resolution_clock::now();
+
+    static State stateCurrent;
+
+    {
+        std::lock_guard<std::mutex> lock(g_buffer.mutex);
+        g_buffer.stateUI.apply(stateCurrent);
+    }
+
+    enum class WindowId {
+        Settings,
+        Rx,
+        Tx,
+    };
+
+    enum class SubWindowIdRx {
+        Main,
+    };
+
+    struct Settings {
+        int nBins = 1;
+        int binMin = 0;
+        int binMax = 0;
+        float df = 1.0f;
+
+        float volume = 0.40f;
+        float intensityScale = 30.0f;
+        //float signalHeight = 2*ImGui::GetTextLineHeightWithSpacing();
+        float frequencySelected_hz = 550.0f;
+        float speedSelected_wpm = 25.0f;
+
+        //ColorMap::Type colorMap = ColorMap::Type::Ggew;
+
+        bool showStats = true;
+        bool showSignal = true;
+        bool isFrequencyAuto = GGMorse::getDefaultParametersDecode().frequency_hz < 0.0;
+        bool isSpeedAuto = GGMorse::getDefaultParametersDecode().speed_wpm < 0.0;
+        bool applyFilterHighPass = GGMorse::getDefaultParametersDecode().applyFilterHighPass;
+        bool applyFilterLowPass = GGMorse::getDefaultParametersDecode().applyFilterHighPass;
+
+        bool txRepeat = false;
+        float txFrequency_hz = 550.0f;
+        int txSpeedCharacters_wpm = 25;
+        int txSpeedFarnsworth_wpm = 25;
+    };
+
+    static WindowId windowId = WindowId::Rx;
+    static WindowId windowIdLast = windowId;
+    [[maybe_unused]] static SubWindowIdRx subWindowIdRx = SubWindowIdRx::Main;
+
+    static Settings settings;
+
+    const double tHoldContextPopup = 0.2;
+
+    const int kMaxInputSize = 140;
+    static char inputBuf[kMaxInputSize];
+
+    static bool doInputFocus = false;
+    static bool doSendMessage = false;
+    static bool mouseButtonLeftLast = 0;
+    static bool isTextInput = false;
+    static bool hasAudioCaptureData = false;
+    static bool hasNewMessages = false;
+
+    [[maybe_unused]] static double tStartInput = 0.0;
+    [[maybe_unused]] static double tEndInput = -100.0;
+    static double tStartTx = 0.0;
+    static double tLengthTx = 0.0;
+    static double tLastFrame = 0.0;
+
+    static std::string rxData = "";
+
+    static GGMorseStats statsCurrent;
+    static GGMorse::Spectrogram spectrogramCurrent;
+    static GGMorse::WaveformI16 txWaveformCurrent;
+    static GGMorse::SignalF signalFCurrent;
+
+    // keyboard shortcuts:
+//    if (ImGui::IsKeyPressed(62, false)) {
+//        printf("F5 pressed : clear message history\n");
+//        // todo
 //    }
 //
-//    enum class WindowId {
-//        Settings,
-//        Rx,
-//        Tx,
-//    };
-//
-//    enum class SubWindowIdRx {
-//        Main,
-//    };
-//
-//    struct Settings {
-//        int nBins = 1;
-//        int binMin = 0;
-//        int binMax = 0;
-//        float df = 1.0f;
-//
-//        float volume = 0.40f;
-//        float intensityScale = 30.0f;
-//        float signalHeight = 2*ImGui::GetTextLineHeightWithSpacing();
-//        float frequencySelected_hz = 550.0f;
-//        float speedSelected_wpm = 25.0f;
-//
-//        ColorMap::Type colorMap = ColorMap::Type::Ggew;
-//
-//        bool showStats = true;
-//        bool showSignal = true;
-//        bool isFrequencyAuto = GGMorse::getDefaultParametersDecode().frequency_hz < 0.0;
-//        bool isSpeedAuto = GGMorse::getDefaultParametersDecode().speed_wpm < 0.0;
-//        bool applyFilterHighPass = GGMorse::getDefaultParametersDecode().applyFilterHighPass;
-//        bool applyFilterLowPass = GGMorse::getDefaultParametersDecode().applyFilterHighPass;
-//
-//        bool txRepeat = false;
-//        float txFrequency_hz = 550.0f;
-//        int txSpeedCharacters_wpm = 25;
-//        int txSpeedFarnsworth_wpm = 25;
-//    };
-//
-//    static WindowId windowId = WindowId::Rx;
-//    static WindowId windowIdLast = windowId;
-//    [[maybe_unused]] static SubWindowIdRx subWindowIdRx = SubWindowIdRx::Main;
-//
-//    static Settings settings;
-//
-//    const double tHoldContextPopup = 0.2;
-//
-//    const int kMaxInputSize = 140;
-//    static char inputBuf[kMaxInputSize];
-//
-//    static bool doInputFocus = false;
-//    static bool doSendMessage = false;
-//    static bool mouseButtonLeftLast = 0;
-//    static bool isTextInput = false;
-//    static bool hasAudioCaptureData = false;
-//    static bool hasNewMessages = false;
-//
-//    [[maybe_unused]] static double tStartInput = 0.0;
-//    [[maybe_unused]] static double tEndInput = -100.0;
-//    static double tStartTx = 0.0;
-//    static double tLengthTx = 0.0;
-//    static double tLastFrame = 0.0;
-//
-//    static std::string rxData = "";
-//
-//    static GGMorseStats statsCurrent;
-//    static GGMorse::Spectrogram spectrogramCurrent;
-//    static GGMorse::WaveformI16 txWaveformCurrent;
-//    static GGMorse::SignalF signalFCurrent;
-//
-//    // keyboard shortcuts:
-////    if (ImGui::IsKeyPressed(62, false)) {
-////        printf("F5 pressed : clear message history\n");
-////        // todo
-////    }
-////
-////    if (ImGui::IsKeyPressed(63, false)) {
-////        printf("F6 pressed : delete last message\n");
-////        // todo
-////    }
-//
-//    if (stateCurrent.update) {
-//        if (stateCurrent.flags.newStats) {
-//            statsCurrent = std::move(stateCurrent.stats);
-//        }
-//        if (stateCurrent.flags.newSpectrogram) {
-//            spectrogramCurrent = std::move(stateCurrent.rxSpectrogram);
-//            hasAudioCaptureData = !spectrogramCurrent.empty();
-//        }
-//        if (stateCurrent.flags.newTxWaveform) {
-//            txWaveformCurrent = std::move(stateCurrent.txWaveform);
-//
-//            tStartTx = ImGui::GetTime() + (24.0f*1024.0f)/statsCurrent.sampleRateOut;
-//            tLengthTx = txWaveformCurrent.size()/statsCurrent.sampleRateOut;
-//            {
-//                auto & ampl = txWaveformCurrent;
-//                int nBins = 512;
-//                int nspb = (int) ampl.size()/nBins;
-//                for (int i = 0; i < nBins; ++i) {
-//                    double sum = 0.0;
-//                    for (int j = 0; j < nspb; ++j) {
-//                        sum += std::abs(ampl[i*nspb + j]);
-//                    }
-//                    ampl[i] = sum/nspb;
-//                }
-//                ampl.resize(nBins);
-//            }
-//        }
-//        if (stateCurrent.flags.newRxData) {
-//            for (const auto & ch : stateCurrent.rxData) {
-//                rxData += ch;
-//            }
-//
-//            if (rxData.size() > 512) {
-//                rxData = rxData.substr(256);
-//            }
-//        }
-//        if (stateCurrent.flags.newSignalF) {
-//            signalFCurrent = std::move(stateCurrent.signalF);
-//        }
-//        stateCurrent.flags.clear();
-//        stateCurrent.update = false;
+//    if (ImGui::IsKeyPressed(63, false)) {
+//        printf("F6 pressed : delete last message\n");
+//        // todo
 //    }
-//
+
+    if (stateCurrent.update) {
+        if (stateCurrent.flags.newStats) {
+            statsCurrent = std::move(stateCurrent.stats);
+        }
+        if (stateCurrent.flags.newSpectrogram) {
+            spectrogramCurrent = std::move(stateCurrent.rxSpectrogram);
+            hasAudioCaptureData = !spectrogramCurrent.empty();
+        }
+        if (stateCurrent.flags.newTxWaveform) {
+            txWaveformCurrent = std::move(stateCurrent.txWaveform);
+
+            //tStartTx = ImGui::GetTime() + (24.0f*1024.0f)/statsCurrent.sampleRateOut;
+            tLengthTx = txWaveformCurrent.size() / statsCurrent.sampleRateOut;
+            {
+                auto &ampl = txWaveformCurrent;
+                int nBins = 512;
+                int nspb = (int) ampl.size() / nBins;
+                for (int i = 0; i < nBins; ++i) {
+                    double sum = 0.0;
+                    for (int j = 0; j < nspb; ++j) {
+                        sum += std::abs(ampl[i * nspb + j]);
+                    }
+                    ampl[i] = sum / nspb;
+                }
+                ampl.resize(nBins);
+            }
+        }
+        if (stateCurrent.flags.newRxData) {
+            for (const auto &ch: stateCurrent.rxData) {
+                rxData += ch;
+            }
+
+            if (rxData.size() > 512) {
+                rxData = rxData.substr(256);
+            }
+        }
+        if (stateCurrent.flags.newSignalF) {
+            signalFCurrent = std::move(stateCurrent.signalF);
+        }
+        stateCurrent.flags.clear();
+        stateCurrent.update = false;
+    }
+
 //    if (mouseButtonLeftLast == 0 && ImGui::GetIO().MouseDown[0] == 1) {
 //        ImGui::GetIO().MouseDelta = { 0.0, 0.0 };
 //    }
-//    mouseButtonLeftLast = ImGui::GetIO().MouseDown[0];
-//
-//    const auto& displaySize = ImGui::GetIO().DisplaySize;
-//    auto& style = ImGui::GetStyle();
-//
-//    const auto sendButtonText = ICON_FA_PLAY_CIRCLE " Send";
-//    [[maybe_unused]] const double tShowKeyboard = 0.2f;
-//#if defined(IOS)
-//    static float statusBarHeightDevice = getStatusBarHeightDevice();
-//    const float statusBarHeight = displaySize.x < displaySize.y ? statusBarHeightDevice : 0.1f;
-//#else
-//    const float statusBarHeight = 0.1f;
-//#endif
-//    const float menuButtonHeight = 1.75f*ImGui::GetTextLineHeightWithSpacing();
-//
-//    const auto & mouse_delta = ImGui::GetIO().MouseDelta;
-//
-//    if (settings.isFrequencyAuto) {
-//        settings.frequencySelected_hz = statsCurrent.statistics.estimatedPitch_Hz;
-//    }
-//    if (settings.isSpeedAuto) {
-//        settings.speedSelected_wpm = statsCurrent.statistics.estimatedSpeed_wpm;
-//    }
-//
+    // mouseButtonLeftLast = ImGui::GetIO().MouseDown[0];
+
+    //const auto& displaySize = ImGui::GetIO().DisplaySize;
+    //auto& style = ImGui::GetStyle();
+
+    const auto sendButtonText = ICON_FA_PLAY_CIRCLE " Send";
+    [[maybe_unused]] const double tShowKeyboard = 0.2f;
+#if defined(IOS)
+    static float statusBarHeightDevice = getStatusBarHeightDevice();
+    const float statusBarHeight = displaySize.x < displaySize.y ? statusBarHeightDevice : 0.1f;
+#else
+    const float statusBarHeight = 0.1f;
+#endif
+    // const float menuButtonHeight = 1.75f*ImGui::GetTextLineHeightWithSpacing();
+
+    // const auto & mouse_delta = ImGui::GetIO().MouseDelta;
+
+    if (settings.isFrequencyAuto) {
+        settings.frequencySelected_hz = statsCurrent.statistics.estimatedPitch_Hz;
+    }
+    if (settings.isSpeedAuto) {
+        settings.speedSelected_wpm = statsCurrent.statistics.estimatedSpeed_wpm;
+    }
+
 //    ImGui::SetNextWindowPos({ 0, 0, });
 //    ImGui::SetNextWindowSize(displaySize);
 //    ImGui::Begin("Main", nullptr,
@@ -619,48 +620,16 @@ void updateCore() {
 //                 ImGuiWindowFlags_NoScrollbar |
 //                 ImGuiWindowFlags_NoResize |
 //                 ImGuiWindowFlags_NoSavedSettings);
+
 //
-//    if (displaySize.x > displaySize.y) {
-//        windowId = WindowId::Rx;
-//    } else {
-//        ImGui::InvisibleButton("StatusBar", { ImGui::GetContentRegionAvail().x, statusBarHeight }, 1); // was nothing
-//
-//        if (ImGui::ButtonSelectable(ICON_FA_COGS, { menuButtonHeight, menuButtonHeight }, windowId == WindowId::Settings )) {
-//            windowId = WindowId::Settings;
-//        }
-//        ImGui::SameLine();
-//
-//        {
-//            auto posSave = ImGui::GetCursorScreenPos();
-//            if (ImGui::ButtonSelectable(ICON_FA_MICROPHONE "  Rx", { 0.45f*ImGui::GetContentRegionAvail().x, menuButtonHeight }, windowId == WindowId::Rx)) {
-//                windowId = WindowId::Rx;
-//            }
-//            auto radius = 0.3f*ImGui::GetTextLineHeight();
-//            posSave.x += 2.0f*radius;
-//            posSave.y += 2.0f*radius;
-//            ImGui::GetWindowDrawList()->AddCircleFilled(posSave, radius, hasAudioCaptureData ? ImGui::ColorConvertFloat4ToU32({ 0.0f, 1.0f, 0.0f, 1.0f }) : ImGui::ColorConvertFloat4ToU32({ 1.0f, 0.0f, 0.0f, 1.0f }), 16);
-//        }
-//        ImGui::SameLine();
-//
-//        {
-//            auto posSave = ImGui::GetCursorScreenPos();
-//            if (ImGui::ButtonSelectable(ICON_FA_HEADPHONES "  Tx", { 1.00f*ImGui::GetContentRegionAvail().x, menuButtonHeight }, windowId == WindowId::Tx)) {
-//                windowId = WindowId::Tx;
-//            }
-//            auto radius = 0.3f*ImGui::GetTextLineHeight();
-//            posSave.x += 2.0f*radius;
-//            posSave.y += 2.0f*radius;
-//            if (hasNewMessages) {
-//                ImGui::GetWindowDrawList()->AddCircleFilled(posSave, radius, ImGui::ColorConvertFloat4ToU32({ 1.0f, 0.0f, 0.0f, 1.0f }), 16);
-//            }
-//        }
-//    }
-//
-//    if ((windowIdLast != windowId) || (hasAudioCaptureData == false)) {
-//        windowIdLast = windowId;
-//    }
-//
-//    if (windowId == WindowId::Settings) {
+      //}
+   // }
+
+    if ((windowIdLast != windowId) || (hasAudioCaptureData == false)) {
+        windowIdLast = windowId;
+    }
+
+    if (windowId == WindowId::Settings) {
 //        ImGui::BeginChild("Settings:main", ImGui::GetContentRegionAvail(), true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
 //        ImGui_TextCentered("GGMorse v1.3.6", false);
 //        ImGui::PushFont(ImGui::GetIO().Fonts->Fonts.back());
@@ -671,8 +640,8 @@ void updateCore() {
 //        ImGui::Text("%s", "");
 //        ImGui::PopFont();
 //        ImGui::Separator();
-//
-//        static char buf[64];
+
+        static char buf[64];
 //        const float kLabelWidth = ImGui::CalcTextSize("Color Map:   ").x;
 //
 //        // Rx settings
@@ -685,7 +654,7 @@ void updateCore() {
 //            ImGui::TextDisabled("Rx settings");
 //            ImGui::PopTextWrapPos();
 //        }
-//
+
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
 //            ImGui::Text("Frequency: ");
@@ -702,7 +671,7 @@ void updateCore() {
 //                g_buffer.inputUI.flags.newParametersDecode = true;
 //            }
 //        }
-//
+
 //        ImGui::Text("%s", "");
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
@@ -720,48 +689,48 @@ void updateCore() {
 //                g_buffer.inputUI.flags.newParametersDecode = true;
 //            }
 //        }
-//
-//        //ImGui::Text("%s", "");
-//        //{
-//        //    auto posSave = ImGui::GetCursorScreenPos();
-//        //    ImGui::Text("%s", "");
-//        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
-//        //    ImGui::PushTextWrapPos();
-//        //    ImGui::TextDisabled("High-pass filter: %.2f Hz", settings.binMin*settings.df);
-//        //    ImGui::PopTextWrapPos();
-//        //}
-//        //{
-//        //    auto posSave = ImGui::GetCursorScreenPos();
-//        //    ImGui::Text("High-pass");
-//        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
-//        //}
-//        //{
-//        //    if (ImGui::Checkbox("Apply##apply high-pass filter", &settings.applyFilterHighPass)) {
-//        //        g_buffer.inputUI.flags.newParametersDecode = true;
-//        //    }
-//        //}
-//
-//        //ImGui::Text("%s", "");
-//        //{
-//        //    auto posSave = ImGui::GetCursorScreenPos();
-//        //    ImGui::Text("%s", "");
-//        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
-//        //    ImGui::PushTextWrapPos();
-//        //    ImGui::TextDisabled("Low-pass filter: %.2f Hz", settings.binMax*settings.df);
-//        //    ImGui::PopTextWrapPos();
-//        //}
-//        //{
-//        //    auto posSave = ImGui::GetCursorScreenPos();
-//        //    ImGui::Text("Low-pass");
-//        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
-//        //}
-//        //{
-//        //    if (ImGui::Checkbox("Apply##apply low-pass filter", &settings.applyFilterLowPass)) {
-//        //        g_buffer.inputUI.flags.newParametersDecode = true;
-//        //    }
-//        //}
-//
-//        // Tx settings
+
+        //ImGui::Text("%s", "");
+        //{
+        //    auto posSave = ImGui::GetCursorScreenPos();
+        //    ImGui::Text("%s", "");
+        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
+        //    ImGui::PushTextWrapPos();
+        //    ImGui::TextDisabled("High-pass filter: %.2f Hz", settings.binMin*settings.df);
+        //    ImGui::PopTextWrapPos();
+        //}
+        //{
+        //    auto posSave = ImGui::GetCursorScreenPos();
+        //    ImGui::Text("High-pass");
+        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
+        //}
+        //{
+        //    if (ImGui::Checkbox("Apply##apply high-pass filter", &settings.applyFilterHighPass)) {
+        //        g_buffer.inputUI.flags.newParametersDecode = true;
+        //    }
+        //}
+
+        //ImGui::Text("%s", "");
+        //{
+        //    auto posSave = ImGui::GetCursorScreenPos();
+        //    ImGui::Text("%s", "");
+        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
+        //    ImGui::PushTextWrapPos();
+        //    ImGui::TextDisabled("Low-pass filter: %.2f Hz", settings.binMax*settings.df);
+        //    ImGui::PopTextWrapPos();
+        //}
+        //{
+        //    auto posSave = ImGui::GetCursorScreenPos();
+        //    ImGui::Text("Low-pass");
+        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
+        //}
+        //{
+        //    if (ImGui::Checkbox("Apply##apply low-pass filter", &settings.applyFilterLowPass)) {
+        //        g_buffer.inputUI.flags.newParametersDecode = true;
+        //    }
+        //}
+
+        // Tx settings
 //        ImGui::Text("%s", "");
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
@@ -771,20 +740,20 @@ void updateCore() {
 //            ImGui::TextDisabled("Tx settings");
 //            ImGui::PopTextWrapPos();
 //        }
-//
-//        //ImGui::Text("%s", "");
-//        //{
-//        //    auto posSave = ImGui::GetCursorScreenPos();
-//        //    ImGui::Text("%s", "");
-//        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
-//        //    if (settings.volume < 0.2f) {
-//        //        ImGui::TextColored({ 0.0f, 1.0f, 0.0f, 0.5f }, "Normal volume");
-//        //    } else if (settings.volume < 0.5f) {
-//        //        ImGui::TextColored({ 1.0f, 1.0f, 0.0f, 0.5f }, "Intermediate volume");
-//        //    } else {
-//        //        ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 0.5f }, "Warning: high volume!");
-//        //    }
-//        //}
+
+        //ImGui::Text("%s", "");
+        //{
+        //    auto posSave = ImGui::GetCursorScreenPos();
+        //    ImGui::Text("%s", "");
+        //    ImGui::SetCursorScreenPos({ posSave.x + kLabelWidth, posSave.y });
+        //    if (settings.volume < 0.2f) {
+        //        ImGui::TextColored({ 0.0f, 1.0f, 0.0f, 0.5f }, "Normal volume");
+        //    } else if (settings.volume < 0.5f) {
+        //        ImGui::TextColored({ 1.0f, 1.0f, 0.0f, 0.5f }, "Intermediate volume");
+        //    } else {
+        //        ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 0.5f }, "Warning: high volume!");
+        //    }
+        //}
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
 //            ImGui::Text("Volume: ");
@@ -826,7 +795,7 @@ void updateCore() {
 //                    );
 //            ImGui::SetCursorScreenPos(posSave);
 //        }
-//
+
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
 //            ImGui::Text("Frequency: ");
@@ -836,7 +805,7 @@ void updateCore() {
 //            snprintf(buf, 64, "%5.1f Hz", settings.txFrequency_hz);
 //            ImGui::DragFloat("##txFrequency", &settings.txFrequency_hz, 1, 200, 1900, buf);
 //        }
-//
+
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
 //            ImGui::Text("Speed: ");
@@ -848,7 +817,7 @@ void updateCore() {
 //                settings.txSpeedFarnsworth_wpm = settings.txSpeedCharacters_wpm;
 //            }
 //        }
-//
+
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
 //            ImGui::Text("%s", "");
@@ -858,8 +827,8 @@ void updateCore() {
 //            snprintf(buf, 64, "Farnsworth speed: %2d WPM", settings.txSpeedFarnsworth_wpm);
 //            ImGui::DragInt("##speedFarnsworth", &settings.txSpeedFarnsworth_wpm, 1, 5, 55, buf);
 //        }
-//
-//        // Spectrogam settings
+
+        // Spectrogam settings
 //        ImGui::Text("%s", "");
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
@@ -881,7 +850,7 @@ void updateCore() {
 //                g_buffer.inputUI.flags.newParametersDecode = true;
 //            }
 //        }
-//
+
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
 //            ImGui::Text("Max: ");
@@ -922,7 +891,7 @@ void updateCore() {
 //                ImGui::EndCombo();
 //            }
 //        }
-//
+
 //        ImGui::Text("%s", "");
 //        {
 //            auto posSave = ImGui::GetCursorScreenPos();
@@ -989,39 +958,43 @@ void updateCore() {
 //
 //        ImGui::EndChild();
 //    }
-//
-//    if (windowId != WindowId::Settings) {
-//        static float rxDataHeight = 10.5f;
-//        static float rxFontScale = 1.0f;
-//
+
+        if (windowId != WindowId::Settings) {
+            static float rxDataHeight = 10.5f;
+            static float rxFontScale = 1.0f;
+
 //        const float rxDataHeightMax = std::round(ImGui::GetContentRegionAvail().y/ImGui::GetTextLineHeightWithSpacing()) - 5;
 //        if (rxDataHeightMax > 4) {
 //            rxDataHeight = std::min(rxDataHeight, rxDataHeightMax);
 //        }
-//
-//        if (hasAudioCaptureData == false) {
-//            ImGui::Text("%s", "");
-//            ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f }, "No capture data available!");
-//            ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f }, "Please make sure you have allowed microphone access for this app.");
-//        } else {
-//            {
-//                settings.nBins = (int) spectrogramCurrent[0].size()/2;
-//                settings.df = 0.5*statsCurrent.sampleRateBase/settings.nBins;
-//
-//                if (settings.binMin == 0 && settings.binMax == 0 && settings.nBins > 1) {
-//                    settings.binMin = std::max(0.0f, g_buffer.inputUI.parametersDecode.frequencyRangeMin_hz - 20.0f)/settings.df;
-//                    settings.binMax = (g_buffer.inputUI.parametersDecode.frequencyRangeMax_hz + 20.0f)/settings.df;
-//                }
-//
-//                static float frequencyMarkerSize = 0.5f*ImGui::CalcTextSize("A").x;
-//                //static bool isHoldingDown = false;
-//                //static bool isContextMenuOpen = false;
-//
+
+            if (hasAudioCaptureData == false) {
+                // ImGui::Text("%s", "");
+                // ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f }, "No capture data available!");
+                // ImGui::TextColored({ 1.0f, 0.0f, 0.0f, 1.0f }, "Please make sure you have allowed microphone access for this app.");
+            } else {
+                {
+                    settings.nBins = (int) spectrogramCurrent[0].size() / 2;
+                    settings.df = 0.5 * statsCurrent.sampleRateBase / settings.nBins;
+
+                    if (settings.binMin == 0 && settings.binMax == 0 && settings.nBins > 1) {
+                        settings.binMin = std::max(0.0f,
+                                                   g_buffer.inputUI.parametersDecode.frequencyRangeMin_hz -
+                                                   20.0f) / settings.df;
+                        settings.binMax =
+                                (g_buffer.inputUI.parametersDecode.frequencyRangeMax_hz + 20.0f) /
+                                settings.df;
+                    }
+
+                    //static float frequencyMarkerSize = 0.5f*ImGui::CalcTextSize("A").x;
+                    //static bool isHoldingDown = false;
+                    //static bool isContextMenuOpen = false;
+
 //                const auto p0 = ImGui::GetCursorScreenPos();
 //                auto mainSize = ImGui::GetContentRegionAvail();
 //                mainSize.x += frequencyMarkerSize;
 //                mainSize.y -= rxDataHeight*ImGui::GetTextLineHeightWithSpacing() + 2.0f*style.ItemSpacing.y;
-//
+
 //#if defined(IOS) || defined(ANDROID)
 //                if (displaySize.x < displaySize.y) {
 //                    if (isTextInput) {
@@ -1044,25 +1017,25 @@ void updateCore() {
 //                style.ChildBorderSize = 0.0f;
 //
 //                ImGui::BeginChild("Rx:main", mainSize, true, ImGuiWindowFlags_NoScrollbar | ImGuiWindowFlags_NoScrollWithMouse);
-//
-//                const int nx = (int) spectrogramCurrent.size();
-//                const int ny = settings.binMax - settings.binMin;
-//
-//                float sum = 0.0;
-//                for (int i = 0; i < nx; ++i) {
-//                    for (int j = 0; j < ny; ++j) {
-//                        sum += spectrogramCurrent[i][settings.binMin + j];
-//                    }
-//                }
-//
-//                sum /= (nx*ny);
-//                if (sum == 0.0) sum = 1.0;
-//                const float iscale = 1.0f/(settings.intensityScale*sum);
+
+                    const int nx = (int) spectrogramCurrent.size();
+                    const int ny = settings.binMax - settings.binMin;
+
+                    float sum = 0.0;
+                    for (int i = 0; i < nx; ++i) {
+                        for (int j = 0; j < ny; ++j) {
+                            sum += spectrogramCurrent[i][settings.binMin + j];
+                        }
+                    }
+
+                    sum /= (nx * ny);
+                    if (sum == 0.0) sum = 1.0;
+                    const float iscale = 1.0f / (settings.intensityScale * sum);
 //                const auto c00 = ImGui::ColorConvertFloat4ToU32(getColor(settings.colorMap, 0.0f));
 //
 //                auto wSize = ImGui::GetContentRegionAvail();
 //                wSize.x -= frequencyMarkerSize;
-//
+
 //                const float dx = wSize.x/nx;
 //                const float dy = wSize.y/ny;
 //
@@ -1072,8 +1045,8 @@ void updateCore() {
 //                ImGui::BeginChild("Spectrogram", { wSize.x + frequencyMarkerSize, (nFreqPerChild + 1)*dy }, true);
 //                auto drawList = ImGui::GetWindowDrawList();
 //                auto drawList0 = ImGui::GetWindowDrawList();
-//
-//                for (int j = 0; j < ny; ++j) {
+
+                    for (int j = 0; j < ny; ++j) {
 //                    if (j > 0 && j % nFreqPerChild == 0) {
 //                        ImGui::EndChild();
 //                        ImGui::PopID();
@@ -1083,35 +1056,35 @@ void updateCore() {
 //                        ImGui::BeginChild("Spectrogram", { wSize.x + frequencyMarkerSize, (nFreqPerChild + 1)*dy }, true);
 //                        drawList = ImGui::GetWindowDrawList();
 //                    }
-//
-//                    int k = settings.binMin + j;
-//                    for (int i = 0; i < nx; ++i) {
-//                        auto v = spectrogramCurrent[i][k]*iscale;
+
+                        int k = settings.binMin + j;
+                        for (int i = 0; i < nx; ++i) {
+                            auto v = spectrogramCurrent[i][k] * iscale;
 //                        auto c0 = c00;
 //                        if (v > 0.05f) {
 //                            c0 = ImGui::ColorConvertFloat4ToU32(getColor(settings.colorMap, v));
 //                        }
-//                        //auto c0 = ImGui::ColorConvertFloat4ToU32({ 0.0f, 1.0f, 0.0f, v});
-//                        drawList->AddRectFilled({ p0.x + i*dx, p0.y + j*dy }, { p0.x + i*dx + dx, p0.y + j*dy + dy }, c0);
-//
-//                        //auto c1 =               i < nx - 1 ? ImGui::ColorConvertFloat4ToU32(getColor(ColorMap::Ggew, spectrogramCurrent[i + 1][k]/(intensityScale*sum))) : c0;
-//                        //auto c2 = i < nx - 1 && j < ny - 1 ? ImGui::ColorConvertFloat4ToU32(getColor(ColorMap::Ggew, spectrogramCurrent[i + 1][k + 1]/(intensityScale*sum))) : c0;
-//                        //auto c3 =               j < ny - 1 ? ImGui::ColorConvertFloat4ToU32(getColor(ColorMap::Ggew, spectrogramCurrent[i][k + 1]/(intensityScale*sum))) : c0;
-//                        //drawList->AddRectFilledMultiColor({ p0.x + i*dx, p0.y + j*dy }, { p0.x + i*dx + dx, p0.y + j*dy + dy }, c0, c1, c2, c3);
-//                    }
-//
-//                    const auto & f = statsCurrent.statistics.estimatedPitch_Hz;
-//                    if (f >= k*settings.df && f < (k + 1)*settings.df) {
+                            //auto c0 = ImGui::ColorConvertFloat4ToU32({ 0.0f, 1.0f, 0.0f, v});
+                            //drawList->AddRectFilled({ p0.x + i*dx, p0.y + j*dy }, { p0.x + i*dx + dx, p0.y + j*dy + dy }, c0);
+
+                            //auto c1 =               i < nx - 1 ? ImGui::ColorConvertFloat4ToU32(getColor(ColorMap::Ggew, spectrogramCurrent[i + 1][k]/(intensityScale*sum))) : c0;
+                            //auto c2 = i < nx - 1 && j < ny - 1 ? ImGui::ColorConvertFloat4ToU32(getColor(ColorMap::Ggew, spectrogramCurrent[i + 1][k + 1]/(intensityScale*sum))) : c0;
+                            //auto c3 =               j < ny - 1 ? ImGui::ColorConvertFloat4ToU32(getColor(ColorMap::Ggew, spectrogramCurrent[i][k + 1]/(intensityScale*sum))) : c0;
+                            //drawList->AddRectFilledMultiColor({ p0.x + i*dx, p0.y + j*dy }, { p0.x + i*dx + dx, p0.y + j*dy + dy }, c0, c1, c2, c3);
+                        }
+
+                        const auto &f = statsCurrent.statistics.estimatedPitch_Hz;
+                        if (f >= k * settings.df && f < (k + 1) * settings.df) {
 //                        drawList0->AddTriangleFilled({ p0.x + wSize.x,                       p0.y + j*dy + 0.5f*dy },
 //                                                     { p0.x + wSize.x + frequencyMarkerSize, p0.y + j*dy + 0.5f*dy - 0.5f*frequencyMarkerSize },
 //                                                     { p0.x + wSize.x + frequencyMarkerSize, p0.y + j*dy + 0.5f*dy + 0.5f*frequencyMarkerSize },
 //                                                     ImGui::ColorConvertFloat4ToU32({ 1.0f, 1.0f, 0.0f, 1.0f }));
-//                    }
-//                }
-//
+                        }
+                    }
+
 //                ImGui::EndChild();
 //                ImGui::PopID();
-//
+
 //                ImGui::SetCursorScreenPos(p0);
 //                ImGui::BeginChild("Stats", { wSize.x + frequencyMarkerSize, mainSize.y }, true);
 //                if (settings.showSignal) {
@@ -1121,15 +1094,15 @@ void updateCore() {
 //                                      { p0.x + wSize.x, p0.y + wSize.y - statsCurrent.statistics.signalThreshold*settings.signalHeight },
 //                                      ImGui::ColorConvertFloat4ToU32({ 1.0f, 0.0f, 0.0f, 0.75f }));
 //                }
-//
-//                ImGui::PushFont(ImGui::GetIO().Fonts->Fonts.back());
-//
+
+                    // ImGui::PushFont(ImGui::GetIO().Fonts->Fonts.back());
+
 //                const float offset = settings.showSignal ? settings.signalHeight : 0.0f;
 //                const float lockSize = 1.5f*ImGui::GetTextLineHeightWithSpacing();
 //                const float statsHeight = 1.0f*ImGui::GetTextLineHeightWithSpacing();
-//                const bool isLocked = !(settings.isFrequencyAuto && settings.isSpeedAuto);
-//
-//                if (settings.showStats) {
+                    const bool isLocked = !(settings.isFrequencyAuto && settings.isSpeedAuto);
+
+                    if (settings.showStats) {
 //                    ImGui::SetCursorScreenPos({ p0.x + 1.0f*itemSpacingSave.x + 2*lockSize, p0.y + wSize.y - offset - 2*statsHeight });
 //                    ImGui::TextColored({ 1.0f, 1.0f, 0.0f, 1.0f }, "FPS: %4.1f | R: %4.1f ms",
 //                                       ImGui::GetIO().Framerate,
@@ -1144,11 +1117,11 @@ void updateCore() {
 //                    ImGui::TextColored({ 1.0f, 1.0f, 0.0f, 1.0f }, " | C: %5.3f",
 //                                       statsCurrent.statistics.costFunction
 //                                      );
-//                }
-//                ImGui::PopFont();
-//
-//                ImGui::SetCursorScreenPos({ p0.x + 0.25f*itemSpacingSave.x, p0.y + wSize.y - offset - 2.0f*lockSize - 0.5f*itemSpacingSave.y});
-//
+                    }
+                    //ImGui::PopFont();
+
+                    //ImGui::SetCursorScreenPos({ p0.x + 0.25f*itemSpacingSave.x, p0.y + wSize.y - offset - 2.0f*lockSize - 0.5f*itemSpacingSave.y});
+
 //                const auto iconLock = isLocked ? ICON_FA_LOCK : ICON_FA_UNLOCK_ALT;
 //                if (ImGui::Button(iconLock, ImVec2 { 2.0f*lockSize, 2.0f*lockSize })) {
 //                    if (!isLocked) {
@@ -1161,7 +1134,7 @@ void updateCore() {
 //                        g_buffer.inputUI.flags.newParametersDecode = true;
 //                    }
 //                }
-//
+
 //                ImGui::EndChild();
 //
 //                ImGui::EndChild();
@@ -1169,41 +1142,41 @@ void updateCore() {
 //                style.ItemSpacing = itemSpacingSave;
 //                style.WindowPadding = windowPaddingSave;
 //                style.ChildBorderSize = childBorderSizeSave;
-//
-//                // Disable context menu on spectrogram
-//                //
-//                //if (!isContextMenuOpen) {
-//                //    auto p1 = p0;
-//                //    p1.x += mainSize.x;
-//                //    p1.y += mainSize.y;
-//
-//                //    if (ImGui::IsMouseHoveringRect(p0, p1, true)) {
-//                //        if (ImGui::GetIO().MouseDownDuration[0] > tHoldContextPopup) {
-//                //            isHoldingDown = true;
-//                //        }
-//                //    }
-//                //}
-//
-//                //if (ImGui::IsMouseReleased(0) && isHoldingDown) {
-//                //    auto pos = ImGui::GetMousePos();
-//                //    ImGui::SetNextWindowPos(pos);
-//
-//                //    ImGui::OpenPopup("Main Options");
-//                //    isHoldingDown = false;
-//                //    isContextMenuOpen = true;
-//                //}
-//
-//                //if (ImGui::BeginPopup("Main Options")) {
-//                //    ImGui::EndPopup();
-//                //} else {
-//                //    isContextMenuOpen = false;
-//                //}
-//            }
-//
-//            {
-//                static bool isContextMenuOpen = false;
-//                static bool isHoldingDown = false;
-//
+
+                    // Disable context menu on spectrogram
+                    //
+                    //if (!isContextMenuOpen) {
+                    //    auto p1 = p0;
+                    //    p1.x += mainSize.x;
+                    //    p1.y += mainSize.y;
+
+                    //    if (ImGui::IsMouseHoveringRect(p0, p1, true)) {
+                    //        if (ImGui::GetIO().MouseDownDuration[0] > tHoldContextPopup) {
+                    //            isHoldingDown = true;
+                    //        }
+                    //    }
+                    //}
+
+                    //if (ImGui::IsMouseReleased(0) && isHoldingDown) {
+                    //    auto pos = ImGui::GetMousePos();
+                    //    ImGui::SetNextWindowPos(pos);
+
+                    //    ImGui::OpenPopup("Main Options");
+                    //    isHoldingDown = false;
+                    //    isContextMenuOpen = true;
+                    //}
+
+                    //if (ImGui::BeginPopup("Main Options")) {
+                    //    ImGui::EndPopup();
+                    //} else {
+                    //    isContextMenuOpen = false;
+                    //}
+                }
+
+                {
+                    static bool isContextMenuOpen = false;
+                    static bool isHoldingDown = false;
+
 //                const auto p0 = ImGui::GetCursorScreenPos();
 //                auto mainSize = ImGui::GetContentRegionAvail();
 //                mainSize.y = rxDataHeight*ImGui::GetTextLineHeightWithSpacing();
@@ -1219,8 +1192,8 @@ void updateCore() {
 //                ImGui::PopTextWrapPos();
 //                ImGui::SetWindowFontScale(1.0f);
 //                ImGui::SetScrollY(ImGui::GetScrollMaxY() - style.ItemSpacing.y);
-//
-//                if (!isContextMenuOpen) {
+
+                    if (!isContextMenuOpen) {
 //                    auto p1 = p0;
 //                    p1.x += mainSize.x;
 //                    p1.y += mainSize.y;
@@ -1230,8 +1203,8 @@ void updateCore() {
 //                            isHoldingDown = true;
 //                        }
 //                    }
-//                }
-//
+                    }
+
 //                if (ImGui::IsMouseReleased(0) && isHoldingDown) {
 //                    auto pos = ImGui::GetMousePos();
 //                    pos.x -= 1.0f*ImGui::CalcTextSize("Clear | Copy").x;
@@ -1242,7 +1215,7 @@ void updateCore() {
 //                    isHoldingDown = false;
 //                    isContextMenuOpen = true;
 //                }
-//
+
 //                if (ImGui::BeginPopup("Rx options")) {
 //                    ImGui::PushItemWidth(0.5*mainSize.x);
 //
@@ -1268,40 +1241,45 @@ void updateCore() {
 //                } else {
 //                    isContextMenuOpen = false;
 //                }
-//
-//                ImGui::EndChild();
-//                ImGui::PopFont();
-//            }
-//
-//            if (windowId == WindowId::Tx) {
-//                static bool isHoldingInput = false;
-//                static std::string inputLast = "";
-//
-//                const auto p0 = ImGui::GetCursorScreenPos();
-//                ImGui::SetCursorScreenPos({ p0.x, p0.y + 0.5f*ImGui::GetTextLineHeight() });
-//
-//                static float amax = 0.0f;
-//                static float frac = 0.0f;
-//
-//                amax = 0.0f;
-//                frac = (ImGui::GetTime() - tStartTx)/tLengthTx;
-//
-//                if (txWaveformCurrent.size() && frac <= 1.0f) {
-//                    struct Funcs {
-//                        static float Sample(void * data, int i) {
-//                            auto res = std::fabs(((int16_t *)(data))[i]) ;
-//                            if (res > amax) amax = res;
-//                            return res;
-//                        }
-//
-//                        static float SampleFrac(void * data, int i) {
-//                            if (i > frac*txWaveformCurrent.size()) {
-//                                return 0.0f;
-//                            }
-//                            return std::fabs(((int16_t *)(data))[i]);
-//                        }
-//                    };
-//
+
+                    //ImGui::EndChild();
+                    //ImGui::PopFont();
+                }
+
+                if (windowId == WindowId::Tx) {
+                    static bool isHoldingInput = false;
+                    static std::string inputLast = "";
+
+                    //const auto p0 = ImGui::GetCursorScreenPos();
+                    //ImGui::SetCursorScreenPos({ p0.x, p0.y + 0.5f*ImGui::GetTextLineHeight() });
+
+                    static float amax = 0.0f;
+                    static float frac = 0.0f;
+
+                    amax = 0.0f;
+                    //frac = (ImGui::GetTime() - tStartTx)/tLengthTx;
+
+                    if (txWaveformCurrent.size() && frac <= 1.0f) {
+                        struct Funcs {
+                            static float Sample(void *data, int i) {
+                                auto res = std::fabs(((int16_t *) (data))[i]);
+                                if (res > amax) amax = res;
+                                return res;
+                            }
+
+                            static float SampleFrac(void *data, int i) {
+                                if (i > frac * txWaveformCurrent.size()) {
+                                    return 0.0f;
+                                }
+                                return std::fabs(((int16_t *) (data))[i]);
+                            }
+                        };
+                    }
+                }
+            }
+        }
+    }
+
 //                    auto posSave = ImGui::GetCursorScreenPos();
 //                    auto wSize = ImGui::GetContentRegionAvail();
 //                    wSize.x = ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(sendButtonText).x - 2*style.ItemSpacing.x;
@@ -1318,7 +1296,7 @@ void updateCore() {
 //                    ImGui::PopStyleColor(2);
 //
 //                    ImGui::SetCursorScreenPos(posSave);
-//
+
 //                    ImGui::PushStyleColor(ImGuiCol_FrameBg, { 0.0f, 0.0f, 0.0f, 0.0f });
 //                    ImGui::PushStyleColor(ImGuiCol_PlotHistogram, { 0.0f, 1.0f, 0.0f, 1.0f });
 //                    ImGui::PlotHistogram("##plotSpectrumCurrent",
@@ -1332,31 +1310,31 @@ void updateCore() {
 //                    ImGui::TextDisabled("F: %5.1f Hz | S: %d/%d WPM",
 //                                        settings.txFrequency_hz, settings.txSpeedCharacters_wpm, settings.txSpeedFarnsworth_wpm);
 //                }
-//
-//                if (doInputFocus) {
-//                    ImGui::SetKeyboardFocusHere();
-//                    doInputFocus = false;
-//                }
-//
-//                doSendMessage = false;
-//                {
+
+                if (doInputFocus) {
+                   // ImGui::SetKeyboardFocusHere();
+                    doInputFocus = false;
+                }
+
+                doSendMessage = false;
+                {
 //                    auto pos0 = ImGui::GetCursorScreenPos();
 //                    ImGui::PushItemWidth(ImGui::GetContentRegionAvail().x - ImGui::CalcTextSize(sendButtonText).x - 2*style.ItemSpacing.x);
 //                    if (ImGui::InputText("##Messages:Input", inputBuf, kMaxInputSize, ImGuiInputTextFlags_EnterReturnsTrue)) {
 //                        doSendMessage = true;
 //                    }
 //                    ImGui::PopItemWidth();
-//
-//                    if (isTextInput == false && inputBuf[0] == 0) {
+
+                    if (isTextInput == false && inputBuf[0] == 0) {
 //                        auto drawList = ImGui::GetWindowDrawList();
 //                        pos0.x += style.ItemInnerSpacing.x;
 //                        pos0.y += 0.5*style.ItemInnerSpacing.y;
 //                        static char tmp[128];
 //                        snprintf(tmp, 128, "Type some text");
 //                        drawList->AddText(pos0, ImGui::ColorConvertFloat4ToU32({0.0f, 0.6f, 0.4f, 1.0f}), tmp);
-//                    }
-//                }
-//
+                    }
+                }
+
 //                if (ImGui::IsItemActive() && isTextInput == false) {
 //                    SDL_StartTextInput();
 //                    isTextInput = true;
@@ -1366,13 +1344,13 @@ void updateCore() {
 //                if (ImGui::IsItemDeactivated()) {
 //                    requestStopTextInput = true;
 //                }
-//
-//                if (isTextInput) {
+
+                if (isTextInput) {
 //                    if (ImGui::IsItemHovered() && ImGui::GetIO().MouseDownDuration[0] > tHoldContextPopup) {
 //                        isHoldingInput = true;
 //                    }
-//                }
-//
+                }
+
 //                if (ImGui::IsMouseReleased(0) && isHoldingInput) {
 //                    auto pos = ImGui::GetMousePos();
 //                    pos.x -= 2.0f*ImGui::CalcTextSize("Paste").x;
@@ -1382,7 +1360,7 @@ void updateCore() {
 //                    ImGui::OpenPopup("Input options");
 //                    isHoldingInput = false;
 //                }
-//
+
 //                if (ImGui::BeginPopup("Input options")) {
 //                    if (ImGui::Button("Paste")) {
 //                        for (int i = 0; i < kMaxInputSize; ++i) inputBuf[i] = 0;
@@ -1392,7 +1370,7 @@ void updateCore() {
 //
 //                    ImGui::EndPopup();
 //                }
-//
+
 //                ImGui::SameLine();
 //                {
 //                    auto posCur = ImGui::GetCursorScreenPos();
@@ -1426,35 +1404,35 @@ void updateCore() {
 //                    isTextInput = false;
 //                    tEndInput = ImGui::GetTime();
 //                }
-//            }
-//        }
-//    }
-//
+            //}
+       // }
+   // }
+
 //    ImGui::End();
 //
 //    ImGui::GetIO().KeysDown[ImGui::GetIO().KeyMap[ImGuiKey_Backspace]] = false;
 //    ImGui::GetIO().KeysDown[ImGui::GetIO().KeyMap[ImGuiKey_Enter]] = false;
-//
-//    if (g_buffer.inputUI.flags.newParametersDecode) {
-//        g_buffer.inputUI.update = true;
-//        g_buffer.inputUI.parametersDecode.frequency_hz = settings.isFrequencyAuto ? -1.0f : settings.frequencySelected_hz;
-//        g_buffer.inputUI.parametersDecode.speed_wpm = settings.isSpeedAuto ? -1.0f : settings.speedSelected_wpm;
-//        g_buffer.inputUI.parametersDecode.frequencyRangeMin_hz = settings.binMin*settings.df;
-//        g_buffer.inputUI.parametersDecode.frequencyRangeMax_hz = settings.binMax*settings.df;
-//        g_buffer.inputUI.parametersDecode.applyFilterHighPass = settings.applyFilterHighPass;
-//        g_buffer.inputUI.parametersDecode.applyFilterLowPass = settings.applyFilterLowPass;
-//    }
-//
-//    {
-//        std::lock_guard<std::mutex> lock(g_buffer.mutex);
-//        g_buffer.inputUI.apply(g_buffer.inputCore);
-//    }
-//
-//    auto tFrameEnd = std::chrono::high_resolution_clock::now();
-//    tLastFrame = getTime_ms(tFrameStart, tFrameEnd);
-//}
-//
-//void deinitMain() {
-//    g_isRunning = false;
-//}
+
+    if (g_buffer.inputUI.flags.newParametersDecode) {
+        g_buffer.inputUI.update = true;
+        g_buffer.inputUI.parametersDecode.frequency_hz = settings.isFrequencyAuto ? -1.0f : settings.frequencySelected_hz;
+        g_buffer.inputUI.parametersDecode.speed_wpm = settings.isSpeedAuto ? -1.0f : settings.speedSelected_wpm;
+        g_buffer.inputUI.parametersDecode.frequencyRangeMin_hz = settings.binMin*settings.df;
+        g_buffer.inputUI.parametersDecode.frequencyRangeMax_hz = settings.binMax*settings.df;
+        g_buffer.inputUI.parametersDecode.applyFilterHighPass = settings.applyFilterHighPass;
+        g_buffer.inputUI.parametersDecode.applyFilterLowPass = settings.applyFilterLowPass;
+    }
+
+    {
+        std::lock_guard<std::mutex> lock(g_buffer.mutex);
+        g_buffer.inputUI.apply(g_buffer.inputCore);
+    }
+
+    auto tFrameEnd = std::chrono::high_resolution_clock::now();
+    tLastFrame = getTime_ms(tFrameStart, tFrameEnd);
+}
+
+void deinitMain() {
+    g_isRunning = false;
+}
 //
